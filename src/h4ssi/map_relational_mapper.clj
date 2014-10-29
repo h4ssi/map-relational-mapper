@@ -50,38 +50,38 @@
        (defn ~(combined-name "collect-" plural-name "-with-remaining-rows") [[~'r & ~'rs :as ~'rrs]]
          (if (empty? ~'rrs)
            [nil nil] ; safe guard against invalid input
-           (let [~'first-record-unique-cols (~(combined-name "collect-unique-cols-for-" singular-name) ~'r)]
-             (if (every? nil? ~'first-record-unique-cols)
+           (let [first-record-unique-cols# (~(combined-name "collect-unique-cols-for-" singular-name) ~'r)]
+             (if (every? nil? first-record-unique-cols#)
                [nil ~'rrs] ; no match on outer join, so there is nothing to collect at all
-               (loop [~'current-record-rows        [~'r]
-                      [~'r & ~'rs :as ~'rrs]       ~'rs ; we process first ~'r directly on loop initialization
-                      ~'current-record-unique-cols ~'first-record-unique-cols
-                      ~'records                    nil]
-                 (let [~'current-row-unique-cols (~(combined-name "collect-unique-cols-for-" singular-name) ~'r)]
+               (loop [[r# & rs# :as rrs#]         ~'rs ; we process first ~'r directly on loop initialization
+                      current-record-unique-cols# first-record-unique-cols#
+                      current-record-rows#        [~'r]
+                      records#                    nil]
+                 (let [current-row-unique-cols# (~(combined-name "collect-unique-cols-for-" singular-name) r#)]
                    (cond
                     (or
-                     (empty? ~'rrs)
-                     (every? nil? ~'current-row-unique-cols)) ; we are at end, but we also have something collected, convert it into object now
+                     (empty? rrs#)
+                     (every? nil? current-row-unique-cols#)) ; we are at end, but we also have something collected, convert it into object now
                     [(concat
-                      ~'records
-                      (lazy-seq (cons (~(combined-name "collect-" singular-name) ~'current-record-rows) nil)))
-                     ~'rrs]
+                      records#
+                      (lazy-seq (cons (~(combined-name "collect-" singular-name) current-record-rows#) nil)))
+                     rrs#]
 
-                    (not= ~'current-record-unique-cols ~'current-row-unique-cols) ; record switch immanent
+                    (not= current-record-unique-cols# current-row-unique-cols#) ; record switch immanent
                     (recur
-                     [~'r]
-                     ~'rs
-                     ~'current-row-unique-cols
+                     rs#
+                     current-row-unique-cols#
+                     [r#]
                      (concat
-                      ~'records
-                      (lazy-seq (cons (~(combined-name "collect-" singular-name) ~'current-record-rows) nil))))
+                      records#
+                      (lazy-seq (cons (~(combined-name "collect-" singular-name) current-record-rows#) nil))))
 
                     :else
                     (recur
-                     (conj ~'current-record-rows ~'r)
-                     ~'rs
-                     ~'current-record-unique-cols
-                     ~'records))))))))
+                     rs#
+                     current-record-unique-cols#
+                     (conj current-record-rows# r#)
+                     records#))))))))
 
        (def ~(combined-name "collect-" plural-name) (comp first ~(combined-name "collect-" plural-name "-with-remaining-rows"))))))
 
